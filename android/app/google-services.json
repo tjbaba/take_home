@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "1095466537729",
+    "project_id": "takehome-33e54",
+    "storage_bucket": "takehome-33e54.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1095466537729:android:01f9b7d22f680305474100",
+        "android_client_info": {
+          "package_name": "com.aliensofts.take_home"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1095466537729-ijfsirkhvgkd8qcc860shdqcg9absg56.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBGBYHz43Zsiw4aFLYcEsiNjf9A7scfENQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1095466537729-ijfsirkhvgkd8qcc860shdqcg9absg56.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
