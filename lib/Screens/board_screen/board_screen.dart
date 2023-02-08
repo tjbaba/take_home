@@ -2,9 +2,11 @@ import 'package:drag_and_drop_lists/drag_and_drop_lists.dart';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:take_home/Screens/board_screen/components/board_templates.dart';
+import 'package:take_home/Screens/board_screen/components/edit_project_dialouge.dart';
 import 'package:take_home/Screens/board_screen/components/edit_task_dialoge.dart';
 import 'package:take_home/providers/Firebase/Backend/backend.dart';
 import 'package:take_home/providers/board_provider/board_provider.dart';
+import 'package:take_home/providers/edit_project_provider/edit_project_provider.dart';
 import 'package:take_home/providers/edit_task/edit_task_provider.dart';
 import 'package:take_home/utils/constants.dart';
 
@@ -13,8 +15,8 @@ import 'model/InnerList.dart';
 import 'model/task.dart';
 
 class KanbanBoard extends ConsumerStatefulWidget {
-  final title;
-  const KanbanBoard({Key? key, this.title}) : super(key: key);
+  final title, id, description;
+  const KanbanBoard({Key? key, this.title, this.id, this.description}) : super(key: key);
 
   @override
   ConsumerState createState() => _KanbanBoardState();
@@ -24,7 +26,9 @@ class _KanbanBoardState extends ConsumerState<KanbanBoard> {
   @override
   void initState() {
     super.initState();
-    ref.read(boardProvider).assignTemplate(widget.title);
+    widget.id != null
+        ? Backend().getData(ref, widget.id)
+        : ref.read(boardProvider).assignTemplate(widget.title);
   }
 
   @override
@@ -36,16 +40,23 @@ class _KanbanBoardState extends ConsumerState<KanbanBoard> {
         elevation: 0,
         foregroundColor: Colors.black,
         backgroundColor: const Color(0xffF1F1F1),
-        title: Text(
-          widget.title,
-          style: const TextStyle(
-              // fontFamily: 'Montserrat',
-              fontWeight: FontWeight.bold),
+        title: InkWell(
+          onTap: () {
+            projectEditDialouge(context, widget.title, widget.description??'', widget.id??"");
+          },
+          child: Text(
+            widget.title,
+            style: const TextStyle(
+                // fontFamily: 'Montserrat',
+                fontWeight: FontWeight.bold),
+          ),
         ),
         actions: [
           InkWell(
-            onTap: (){
-              Backend().uploadData(board.lists);
+            onTap: () {
+              widget.id == null
+                  ? Backend().uploadData(board.lists, widget.title)
+                  : Backend().updateData(board.lists, widget.title, widget.id);
             },
             child: const Padding(
               padding: EdgeInsets.only(right: 20),
@@ -77,16 +88,19 @@ class _KanbanBoardState extends ConsumerState<KanbanBoard> {
         minScale: 0.002,
         maxScale: 5,
         scaleFactor: 100,
-        child: DragAndDropLists(
-          children:
-              List.generate(board.lists.length, (index) => _buildList(index)),
-          onItemReorder: board.onItemReorder,
-          onListReorder: board.onListReorder,
-          axis: Axis.horizontal,
-          listWidth: 280,
-          listDraggingWidth: 150,
-          listPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-        ),
+        child: board.lists.isEmpty
+            ? const Center(child: CircularProgressIndicator())
+            : DragAndDropLists(
+                children: List.generate(
+                    board.lists.length, (index) => _buildList(index)),
+                onItemReorder: board.onItemReorder,
+                onListReorder: board.onListReorder,
+                axis: Axis.horizontal,
+                listWidth: 280,
+                listDraggingWidth: 150,
+                listPadding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              ),
       ),
     );
   }
@@ -150,12 +164,9 @@ class _KanbanBoardState extends ConsumerState<KanbanBoard> {
               InkWell(
                   onTap: () {
                     setState(() {
-                      innerList.children.add(
-                        Task(
+                      innerList.children.add(Task(
                           title: 'New Task',
-                          description: 'New Task Description'
-                        )
-                      );
+                          description: 'New Task Description'));
                     });
                   },
                   child: Icon(
@@ -175,12 +186,12 @@ class _KanbanBoardState extends ConsumerState<KanbanBoard> {
     return DragAndDropItem(
       child: InkWell(
           onTap: () {
-            _showCreateDialog(context, item, outerIndex, innerIndex);
+            taskEditDialouge(context, item, outerIndex, innerIndex);
           },
           child: SizedBox(
             width: MediaQuery.of(context).size.width,
             child: Card(
-              color: item.color?? Colors.white,
+              color: item.color ?? Colors.white,
               child: Padding(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 15),
@@ -199,20 +210,22 @@ class _KanbanBoardState extends ConsumerState<KanbanBoard> {
                           fontSize: 12,
                           color: Colors.black54),
                     ),
-                   item.label != null? Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        Chip(
-                          backgroundColor: kBackgroundColor,
-                          label: Text(
-                            "${item.label}",
-                            style: const TextStyle(
-                                fontFamily: 'Montserrat', fontSize: 12),
-                          ),
-                          padding: const EdgeInsets.all(2),
-                        )
-                      ],
-                    ) : const SizedBox()
+                    item.label != null
+                        ? Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              Chip(
+                                backgroundColor: kBackgroundColor,
+                                label: Text(
+                                  "${item.label}",
+                                  style: const TextStyle(
+                                      fontFamily: 'Montserrat', fontSize: 12),
+                                ),
+                                padding: const EdgeInsets.all(2),
+                              )
+                            ],
+                          )
+                        : const SizedBox()
                   ],
                 ),
               ),
@@ -221,7 +234,7 @@ class _KanbanBoardState extends ConsumerState<KanbanBoard> {
     );
   }
 
-  Future<void> _showCreateDialog(
+  Future<void> taskEditDialouge(
       BuildContext context, var item, var outerIndex, var innerIndex) {
     return showDialog<void>(
       context: context,
@@ -273,7 +286,57 @@ class _KanbanBoardState extends ConsumerState<KanbanBoard> {
       ),
     );
   }
+
+  Future<void> projectEditDialouge(
+      BuildContext context, String name, String description, String id) {
+    return showDialog<void>(
+      context: context,
+      builder: (context) => KDialog(
+        color: Colors.white,
+        title: Row(
+          children: [
+            const Expanded(child: Text('Edit Project Details')),
+            InkWell(
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.pop(context);
+                  ref.watch(backend).deleteProject(id);
+                },
+                child: const Icon(
+                  Icons.delete,
+                  color: kPrimaryColor,
+                ))
+          ],
+        ),
+        content: SizedBox(
+          width: 400.0,
+          height: 200.0,
+          child: EditProjectDialouge(
+            name: name,
+            description: description,
+          ),
+        ),
+        actions: [
+          TextButton(
+            child: const Text(
+              'CANCEL',
+              style: TextStyle(color: Colors.black87),
+            ),
+            onPressed: () => Navigator.pop(context),
+          ),
+          TextButton(
+            child: const Text(
+              'SAVE',
+              style: TextStyle(color: Colors.black87),
+            ),
+            onPressed: () {
+              ref.watch(backend).updateProject(ref, id);
+              Navigator.pop(context);
+              Navigator.pop(context);
+            },
+          ),
+        ],
+      ),
+    );
+  }
 }
-
-
-

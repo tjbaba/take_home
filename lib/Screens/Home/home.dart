@@ -1,23 +1,32 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:take_home/Screens/Home/components/project_item.dart';
 import 'package:take_home/Screens/Home/components/title_row.dart';
+import 'package:take_home/providers/Firebase/Backend/backend.dart';
 import 'package:take_home/utils/constants.dart';
 import '../../providers/Firebase/authentication/firebase_auth.dart';
 import 'components/add_project.dart';
 
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   @override
   _HomeScreenState createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends ConsumerState<HomeScreen> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final GlobalKey<ScaffoldState> _key = GlobalKey();
 
   DateTime now = DateTime.now();
+
+  @override
+  void initState() {
+    super.initState();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -29,38 +38,48 @@ class _HomeScreenState extends State<HomeScreen> {
           padding: EdgeInsets.zero,
           children: [
             UserAccountsDrawerHeader(
-              decoration: const BoxDecoration(
-                color: kBackgroundColor
-              ),
+                decoration: const BoxDecoration(color: kBackgroundColor),
                 currentAccountPicture: CachedNetworkImage(
                   imageUrl: '${_auth.currentUser!.photoURL!}',
                   imageBuilder: (context, imageProvider) => Container(
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       image: DecorationImage(
-                          image: imageProvider,
-                          fit: BoxFit.cover,),
+                        image: imageProvider,
+                        fit: BoxFit.cover,
+                      ),
                     ),
                   ),
-                  placeholder: (context, url) => const CircularProgressIndicator(),
+                  placeholder: (context, url) =>
+                      const CircularProgressIndicator(),
                   errorWidget: (context, url, error) => const Icon(Icons.error),
                 ),
-                accountName: Text(_auth.currentUser!.displayName!, style: const TextStyle(
-                  fontFamily: 'Montserrat',
-                  color: Colors.black,
-                  fontWeight: FontWeight.bold
-                ),),
-                accountEmail: Text(_auth.currentUser!.email!, style: const TextStyle(
+                accountName: Text(
+                  _auth.currentUser!.displayName!,
+                  style: const TextStyle(
+                      fontFamily: 'Montserrat',
+                      color: Colors.black,
+                      fontWeight: FontWeight.bold),
+                ),
+                accountEmail: Text(
+                  _auth.currentUser!.email!,
+                  style: const TextStyle(
                     fontFamily: 'Montserrat',
                     color: Colors.black,
-                ),)),
+                  ),
+                )),
             ListTile(
-              title: const Text('Logout', style: TextStyle(
-                  fontFamily: 'Montserrat',
-                  color: Colors.black,
-                  fontWeight: FontWeight.bold
-              ),),
-              trailing: const Icon(Icons.logout, color: kPrimaryColor,),
+              title: const Text(
+                'Logout',
+                style: TextStyle(
+                    fontFamily: 'Montserrat',
+                    color: Colors.black,
+                    fontWeight: FontWeight.bold),
+              ),
+              trailing: const Icon(
+                Icons.logout,
+                color: kPrimaryColor,
+              ),
               onTap: () {
                 Authenticator().signout(context);
               },
@@ -148,7 +167,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       placeholder: (context, url) =>
                           const CircularProgressIndicator(),
-                      errorWidget: (context, url, error) => const Icon(Icons.error),
+                      errorWidget: (context, url, error) =>
+                          const Icon(Icons.error),
                     ),
                     const SizedBox(
                       width: 20,
@@ -193,18 +213,48 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Padding(
                 padding: const EdgeInsets.all(20.0),
                 child: ListView(
-                  children: const [
-                    TitleRow(
+                  children: [
+                    const TitleRow(
                       title: 'YOUR PROJECTS',
                       number: 3,
                     ),
-                    SizedBox(
+                    const SizedBox(
                       height: 20,
                     ),
-                    BuildProjectItem(),
-                    BuildProjectItem(),
-                    BuildAddProject(),
-                    SizedBox(
+                    StreamBuilder<QuerySnapshot>(
+                        stream: Backend()
+                            .firestore
+                            .collection('Users')
+                            .doc(_auth.currentUser!.uid)
+                            .collection('Projects')
+                            .snapshots(),
+                        builder: (BuildContext context,
+                            AsyncSnapshot<QuerySnapshot> snapshot) {
+                          if (!snapshot.hasData) {
+                            return Container(
+                                alignment: Alignment.topCenter,
+                                // margin: EdgeInsets.only(top: 20),
+                                child: const CircularProgressIndicator(
+                                  backgroundColor: Colors.grey,
+                                  color: Colors.blue,
+                                ));
+                          } else {
+                            return ListView.builder(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              itemCount: snapshot.data!.docs.length,
+                              // snapshot.data!.docs.length,
+                              itemBuilder: (context, index) {
+                                DocumentSnapshot data =
+                                    snapshot.data!.docs[index];
+                                return BuildProjectItem(data: data,);
+                              },
+                              scrollDirection: Axis.vertical,
+                            );
+                          }
+                        }),
+                    const BuildAddProject(),
+                    const SizedBox(
                       height: 25,
                     ),
                   ],

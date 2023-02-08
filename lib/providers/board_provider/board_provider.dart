@@ -8,6 +8,7 @@ class BoardProvider extends ChangeNotifier {
   List<InnerList> lists = [];
 
   void assignTemplate(String title) {
+    lists.clear();
     lists = title == 'Software Project'
         ? softwareProject
         : title == 'Weekly Plan'

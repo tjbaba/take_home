@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:take_home/providers/Firebase/Backend/backend.dart';
 
-class TitleRow extends StatelessWidget {
+class TitleRow extends ConsumerWidget {
   final title, number;
   const TitleRow({Key? key, this.title, this.number}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -16,15 +18,7 @@ class TitleRow extends StatelessWidget {
                   fontSize: 16,
                   color: Colors.black,
                   fontWeight: FontWeight.bold),
-              children: [
-                TextSpan(
-                  text: "($number)",
-                  style: const TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey,
-                      fontWeight: FontWeight.normal),
-                ),
-              ]),
+          ),
         ),
       ],
     );
