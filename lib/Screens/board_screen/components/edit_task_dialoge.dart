@@ -1,55 +1,80 @@
 import 'package:flex_color_picker/flex_color_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:intl/intl.dart';
+import 'package:take_home/providers/edit_task/edit_task_provider.dart';
 import 'package:take_home/utils/constants.dart';
 import '../widgets/k_textField.dart';
+import 'dart:math' as math;
 
 Color pickerColor = const Color(0xff443a49);
 Color currentColor = const Color(0xff443a49);
 
-class EditTaskDialog extends StatefulWidget {
+class EditTaskDialog extends ConsumerStatefulWidget {
   final void Function(Map value)? onSelected;
-  final item;
+  final item, innerIndex, outerIndex;
 
   const EditTaskDialog({
     this.onSelected,
     this.item,
+    this.outerIndex,
+    this.innerIndex,
     Key? key,
   }) : super(key: key);
 
   @override
-  State<EditTaskDialog> createState() => _EditTaskDialogState();
+  ConsumerState<EditTaskDialog> createState() => _EditTaskDialogState();
 }
 
-class _EditTaskDialogState extends State<EditTaskDialog> {
+class _EditTaskDialogState extends ConsumerState<EditTaskDialog> {
+  List<String> options = [
+    'News',
+    'Entertainment',
+    'Politics',
+    'Automotive',
+    'Sports',
+    'Education',
+    'Fashion',
+    'Travel',
+    'Food',
+    'Tech',
+    'Science',
+  ];
 
-  Color taskCardColor = Colors.white;
   @override
   void initState() {
-    // TODO: implement initState
-    taskCardColor = widget.item.containsKey('color')? widget.item['color']: Colors.white;
+    super.initState();
+    ref.read(editTaskProvider).checkValues(widget.item);
   }
+
   @override
   Widget build(BuildContext context) {
+    final provider = ref.watch(editTaskProvider);
     return ListView(
       children: [
         // Task.title
-         KTextField(
+        KTextField(
           icon: Icons.title,
           name: 'Title',
-          value: '${widget.item['title']}',
+          value: provider.title!,
           minLines: 1,
           maxLines: 3,
-
+          onChanged: (value) {
+            provider.title = value;
+          },
         ),
 
         // Task.description
-         KTextField(
+        KTextField(
           icon: Icons.article,
           name: 'Description',
-          value: widget.item['description'],
-          style: TextStyle(fontStyle: FontStyle.italic),
+          value: provider.description!,
+          style: const TextStyle(fontStyle: FontStyle.italic),
           minLines: 1,
           maxLines: 10,
+          onChanged: (value) {
+            provider.description = value;
+          },
           // onFocusLost: (value) => context.read<BoardBloc>().add(
           //   EditCardEvent(
           //     position,
@@ -60,41 +85,124 @@ class _EditTaskDialogState extends State<EditTaskDialog> {
 
         //Task.color
         InputDecorator(
-          decoration: const InputDecoration(
-            labelText: 'Color',
-            labelStyle: TextStyle(
-              color: kPrimaryColor
+            decoration: const InputDecoration(
+              labelText: 'Color',
+              labelStyle: TextStyle(color: kPrimaryColor),
+              border: InputBorder.none,
+              icon: Icon(
+                Icons.color_lens,
+                color: kPrimaryColor,
+              ),
             ),
-            border: InputBorder.none,
-            icon: Icon(Icons.color_lens, color: kPrimaryColor,),
-          ),
-          child: InkWell(
-            onTap: (){
-              colorPickerDialog();
-            },
-            child: Row(
-              children: [
-                Card(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(100.0),
+            child: InkWell(
+              onTap: () {
+                colorPickerDialog();
+              },
+              child: Row(
+                children: [
+                  Card(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(100.0),
+                    ),
+                    color: provider.color,
+                    child: const SizedBox(
+                      height: 40,
+                      width: 40,
+                    ),
                   ),
-                  color: taskCardColor,
-                  child: SizedBox(height: 40, width: 40,),
-                ),
-              ],
+                ],
+              ),
+            )),
+
+        //Task.dueDate
+        InputDecorator(
+            decoration: const InputDecoration(
+              labelText: 'Due Date',
+              labelStyle: TextStyle(color: kPrimaryColor),
+              border: InputBorder.none,
+              icon: Icon(
+                Icons.timer,
+                color: kPrimaryColor,
+              ),
             ),
-          )
+            child: InkWell(
+              onTap: () async {
+                provider.datePicker(context);
+              },
+              child: Row(
+                children: [
+                  provider.dueDate == null
+                      ? const Text('Pick Date')
+                      : Text(
+                          DateFormat('dd MMM yyyy').format(provider.dueDate!))
+                ],
+              ),
+            )),
+
+        //Task.label
+        InputDecorator(
+            decoration: const InputDecoration(
+              labelText: 'Label',
+              labelStyle: TextStyle(color: kPrimaryColor),
+              border: InputBorder.none,
+              icon: Icon(
+                Icons.label,
+                color: kPrimaryColor,
+              ),
+            ),
+            child: Wrap(
+              // space between chips
+              spacing: 10,
+              // list of chips
+              children: provider.options
+                  .map((chip) => InkWell(
+                        onTap: () {
+                          provider.updateLabel(chip);
+                        },
+                        child: Chip(
+                          label: Text(chip),
+                          side: provider.label == chip
+                              ? const BorderSide(color: Colors.black)
+                              : null,
+                          backgroundColor: kBackgroundColor,
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 5, horizontal: 5),
+                          deleteIconColor: Colors.red,
+                        ),
+                      ))
+                  .toList(),
+            )),
+
+        //Task.note
+        // Task.description
+        KTextField(
+          icon: Icons.article,
+          name: 'Note',
+          value: provider.description!,
+          style: const TextStyle(fontStyle: FontStyle.italic),
+          minLines: 1,
+          maxLines: 10,
+          onChanged: (value) {
+            provider.note = value;
+          },
+          // onFocusLost: (value) => context.read<BoardBloc>().add(
+          //   EditCardEvent(
+          //     position,
+          //     card.copyWith(description: value),
+          //   ),
+          // ),
         ),
       ],
     );
   }
+
   Future<bool> colorPickerDialog() async {
+    final provider = ref.watch(editTaskProvider);
     return ColorPicker(
       // Use the dialogPickerColor as start color.
-      color: taskCardColor,
+      color: provider.color!,
       // Update the dialogPickerColor using the callback.
-      onColorChanged: (Color color) =>
-          setState(() => taskCardColor = color),
+      onColorChanged: (Color color) => setState(() => provider.color = color),
       width: 40,
       height: 40,
       borderRadius: 4,
@@ -113,10 +221,8 @@ class _EditTaskDialogState extends State<EditTaskDialog> {
         'Selected color and its shades',
         style: Theme.of(context).textTheme.titleSmall,
       ),
-      actionButtons: const ColorPickerActionButtons(
-        okButton: true,
-        closeButton: true
-      ),
+      actionButtons:
+          const ColorPickerActionButtons(okButton: true, closeButton: true),
       showMaterialName: true,
       showColorName: true,
       showColorCode: true,
@@ -137,15 +243,12 @@ class _EditTaskDialogState extends State<EditTaskDialog> {
     ).showPickerDialog(
       context,
       // New in version 3.0.0 custom transitions support.
-      transitionBuilder: (BuildContext context,
-          Animation<double> a1,
-          Animation<double> a2,
-          Widget widget) {
+      transitionBuilder: (BuildContext context, Animation<double> a1,
+          Animation<double> a2, Widget widget) {
         final double curvedValue =
             Curves.easeInOutBack.transform(a1.value) - 1.0;
         return Transform(
-          transform: Matrix4.translationValues(
-              0.0, curvedValue * 200, 0.0),
+          transform: Matrix4.translationValues(0.0, curvedValue * 200, 0.0),
           child: Opacity(
             opacity: a1.value,
             child: widget,
@@ -154,8 +257,7 @@ class _EditTaskDialogState extends State<EditTaskDialog> {
       },
       transitionDuration: const Duration(milliseconds: 400),
       constraints:
-      const BoxConstraints(minHeight: 460, minWidth: 300, maxWidth: 320),
+          const BoxConstraints(minHeight: 460, minWidth: 300, maxWidth: 320),
     );
   }
-
 }

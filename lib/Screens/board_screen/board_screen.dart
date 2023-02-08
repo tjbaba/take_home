@@ -1,52 +1,62 @@
 import 'package:drag_and_drop_lists/drag_and_drop_lists.dart';
 import 'package:flutter/material.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:take_home/Screens/board_screen/components/board_templates.dart';
 import 'package:take_home/Screens/board_screen/components/edit_task_dialoge.dart';
+import 'package:take_home/providers/Firebase/Backend/backend.dart';
+import 'package:take_home/providers/board_provider/board_provider.dart';
+import 'package:take_home/providers/edit_task/edit_task_provider.dart';
 import 'package:take_home/utils/constants.dart';
 
 import '../../utils/k_dialog.dart';
+import 'model/InnerList.dart';
+import 'model/task.dart';
 
-class KanbanBoard extends StatefulWidget {
+class KanbanBoard extends ConsumerStatefulWidget {
   final title;
   const KanbanBoard({Key? key, this.title}) : super(key: key);
 
   @override
-  State createState() => _KanbanBoardState();
+  ConsumerState createState() => _KanbanBoardState();
 }
 
-class _KanbanBoardState extends State<KanbanBoard> {
-  late List<InnerList> _lists;
-
+class _KanbanBoardState extends ConsumerState<KanbanBoard> {
   @override
   void initState() {
     super.initState();
-
-    _lists =widget.title == 'Software Project'
-            ? softwareProject
-            : widget.title == 'Weekly Plan'
-                ? weeklyPlan
-                : widget.title == 'Quarterly Plan'?quarterlyPlan: [];
+    ref.read(boardProvider).assignTemplate(widget.title);
   }
 
   @override
   Widget build(BuildContext context) {
+    final board = ref.watch(boardProvider);
     return Scaffold(
       backgroundColor: const Color(0xFFF9F9FB),
       appBar: AppBar(
         elevation: 0,
         foregroundColor: Colors.black,
         backgroundColor: const Color(0xffF1F1F1),
-        title: Text(widget.title, style: const TextStyle(
-          // fontFamily: 'Montserrat',
-          fontWeight: FontWeight.bold
-        ),),
-        actions: const [
-          Padding(
-            padding: EdgeInsets.only(right: 20),
-            child: Center(
-              child: Text(
-                'Save',
-                style: TextStyle(fontWeight: FontWeight.w500, fontSize: 16, fontFamily: 'Montserrat'),
+        title: Text(
+          widget.title,
+          style: const TextStyle(
+              // fontFamily: 'Montserrat',
+              fontWeight: FontWeight.bold),
+        ),
+        actions: [
+          InkWell(
+            onTap: (){
+              Backend().uploadData(board.lists);
+            },
+            child: const Padding(
+              padding: EdgeInsets.only(right: 20),
+              child: Center(
+                child: Text(
+                  'Save',
+                  style: TextStyle(
+                      fontWeight: FontWeight.w500,
+                      fontSize: 16,
+                      fontFamily: 'Montserrat'),
+                ),
               ),
             ),
           )
@@ -55,7 +65,7 @@ class _KanbanBoardState extends State<KanbanBoard> {
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           setState(() {
-            _lists.add(InnerList(name: 'New List', children: []));
+            board.lists.add(InnerList(name: 'New List', children: []));
           });
         },
         child: const Icon(
@@ -68,9 +78,10 @@ class _KanbanBoardState extends State<KanbanBoard> {
         maxScale: 5,
         scaleFactor: 100,
         child: DragAndDropLists(
-          children: List.generate(_lists.length, (index) => _buildList(index)),
-          onItemReorder: _onItemReorder,
-          onListReorder: _onListReorder,
+          children:
+              List.generate(board.lists.length, (index) => _buildList(index)),
+          onItemReorder: board.onItemReorder,
+          onListReorder: board.onListReorder,
           axis: Axis.horizontal,
           listWidth: 280,
           listDraggingWidth: 150,
@@ -81,7 +92,7 @@ class _KanbanBoardState extends State<KanbanBoard> {
   }
 
   _buildList(int outerIndex) {
-    var innerList = _lists[outerIndex];
+    var innerList = ref.watch(boardProvider).lists[outerIndex];
     return DragAndDropList(
       header: Row(
         children: [
@@ -89,10 +100,7 @@ class _KanbanBoardState extends State<KanbanBoard> {
             child: Text(
               innerList.name,
               style: const TextStyle(
-                color: Colors.black,
-                  fontFamily: 'Montserrat',
-                fontSize: 18
-              ),
+                  color: Colors.black, fontFamily: 'Montserrat', fontSize: 18),
             ),
           ),
           Row(
@@ -117,9 +125,9 @@ class _KanbanBoardState extends State<KanbanBoard> {
                   // popupmenu item 2
                   PopupMenuItem(
                     value: 2,
-                    onTap: (){
+                    onTap: () {
                       setState(() {
-                        _lists.removeAt(outerIndex);
+                        ref.watch(boardProvider).lists.removeAt(outerIndex);
                       });
                     },
                     child: Row(
@@ -142,7 +150,12 @@ class _KanbanBoardState extends State<KanbanBoard> {
               InkWell(
                   onTap: () {
                     setState(() {
-                      innerList.children.add({'title': 'New Task', 'description': 'New Task Description'});
+                      innerList.children.add(
+                        Task(
+                          title: 'New Task',
+                          description: 'New Task Description'
+                        )
+                      );
                     });
                   },
                   child: Icon(
@@ -153,99 +166,114 @@ class _KanbanBoardState extends State<KanbanBoard> {
           )
         ],
       ),
-
       children: List.generate(innerList.children.length,
-          (index) => _buildItem(innerList.children[index], outerIndex)),
+          (index) => _buildItem(innerList.children[index], outerIndex, index)),
     );
   }
 
-  _buildItem(item, outerIndex) {
+  _buildItem(Task item, outerIndex, innerIndex) {
     return DragAndDropItem(
       child: InkWell(
-        onTap: () {
-          _showCreateDialog(context, item, outerIndex);
-        },
-        child: SizedBox(
-          width: MediaQuery.of(context).size.width,
-          child: Card(
-            color: item.containsKey('color')? item['color']: Colors.white,
-
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 15),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(item['title'], style: const TextStyle(
-                    fontFamily: 'Montserrat', fontSize: 16
-                  ),),
-                  Text(item['description'], style: const TextStyle(
-                      fontFamily: 'Montserrat', fontSize: 12,
-                    color: Colors.black54
-                  ),),
-                ],
+          onTap: () {
+            _showCreateDialog(context, item, outerIndex, innerIndex);
+          },
+          child: SizedBox(
+            width: MediaQuery.of(context).size.width,
+            child: Card(
+              color: item.color?? Colors.white,
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 15),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.title!,
+                      style: const TextStyle(
+                          fontFamily: 'Montserrat', fontSize: 16),
+                    ),
+                    Text(
+                      item.description!,
+                      style: const TextStyle(
+                          fontFamily: 'Montserrat',
+                          fontSize: 12,
+                          color: Colors.black54),
+                    ),
+                   item.label != null? Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        Chip(
+                          backgroundColor: kBackgroundColor,
+                          label: Text(
+                            "${item.label}",
+                            style: const TextStyle(
+                                fontFamily: 'Montserrat', fontSize: 12),
+                          ),
+                          padding: const EdgeInsets.all(2),
+                        )
+                      ],
+                    ) : const SizedBox()
+                  ],
+                ),
               ),
             ),
-          ),
-        )
-      ),
+          )),
     );
   }
 
-  Future<void> _showCreateDialog(BuildContext context, var item, var outerIndex) {
+  Future<void> _showCreateDialog(
+      BuildContext context, var item, var outerIndex, var innerIndex) {
     return showDialog<void>(
       context: context,
       builder: (context) => KDialog(
         color: Colors.white,
-        title: const Text('Editing Task'),
+        title: Row(
+          children: [
+            const Expanded(child: Text('Editing Task')),
+            InkWell(
+                onTap: () {
+                  Navigator.pop(context);
+                  ref.watch(boardProvider).deleteTask(outerIndex, innerIndex);
+                },
+                child: const Icon(
+                  Icons.delete,
+                  color: kPrimaryColor,
+                ))
+          ],
+        ),
         content: SizedBox(
           width: 400.0,
           height: 400.0,
           child: EditTaskDialog(
             item: item,
-            onSelected: (value) {
-
-            },
+            innerIndex: innerIndex,
+            outerIndex: outerIndex,
+            onSelected: (value) {},
           ),
         ),
         actions: [
           TextButton(
-            child: const Text('CANCEL', style: TextStyle(
-                color: Colors.black87
-            ),),
+            child: const Text(
+              'CANCEL',
+              style: TextStyle(color: Colors.black87),
+            ),
             onPressed: () => Navigator.pop(context),
           ),
           TextButton(
-            child: const Text('SAVE', style: TextStyle(
-                color: Colors.black87
-            ),),
+            child: const Text(
+              'SAVE',
+              style: TextStyle(color: Colors.black87),
+            ),
             onPressed: () {
+              ref.watch(editTaskProvider).saveDate(innerIndex, outerIndex, ref);
               Navigator.pop(context);
-              _lists[outerIndex].children.where((element) => false);
             },
           ),
         ],
       ),
     );
   }
-
-  _onItemReorder(
-      int oldItemIndex, int oldListIndex, int newItemIndex, int newListIndex) {
-    setState(() {
-      var movedItem = _lists[oldListIndex].children.removeAt(oldItemIndex);
-      _lists[newListIndex].children.insert(newItemIndex, movedItem);
-    });
-  }
-
-  _onListReorder(int oldListIndex, int newListIndex) {
-    setState(() {
-      var movedList = _lists.removeAt(oldListIndex);
-      _lists.insert(newListIndex, movedList);
-    });
-  }
 }
 
-class InnerList {
-  final String name;
-  List<Map> children;
-  InnerList({required this.name, required this.children});
-}
+
+

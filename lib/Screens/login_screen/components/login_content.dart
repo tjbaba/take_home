@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:ionicons/ionicons.dart';
-import 'package:take_home/Screens/Home/home.dart';
 
+import '../../../providers/Firebase/authentication/firebase_auth.dart';
 import '../../../utils/constants.dart';
 import '../../../utils/helper_functions.dart';
 import '../animations/change_screen_animation.dart';
@@ -25,7 +25,12 @@ class _LoginContentState extends State<LoginContent>
   late final List<Widget> createAccountContent;
   late final List<Widget> loginContent;
 
-  Widget inputField(String hint, IconData iconData) {
+
+  TextEditingController email = TextEditingController();
+  TextEditingController password = TextEditingController();
+  TextEditingController displayName = TextEditingController();
+
+  Widget inputField(String hint, IconData iconData, TextEditingController controller) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 36, vertical: 8),
       child: SizedBox(
@@ -37,6 +42,7 @@ class _LoginContentState extends State<LoginContent>
           borderRadius: BorderRadius.circular(30),
           child: TextField(
             textAlignVertical: TextAlignVertical.bottom,
+            controller: controller,
             decoration: InputDecoration(
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(30),
@@ -58,7 +64,9 @@ class _LoginContentState extends State<LoginContent>
       padding: const EdgeInsets.symmetric(horizontal: 135, vertical: 16),
       child: ElevatedButton(
         onPressed: () {
-          Navigator.push(context, MaterialPageRoute(builder: (context) => HomeScreen()));
+          title == 'Sign Up'
+              ? Authenticator().createAccount(context, email.text, password.text, displayName.text)
+              : Authenticator().login(context, email.text, password.text);
         },
         style: ElevatedButton.styleFrom(
           padding: const EdgeInsets.symmetric(vertical: 14),
@@ -116,9 +124,11 @@ class _LoginContentState extends State<LoginContent>
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Image.asset('assets/images/facebook.png'),
-          // const SizedBox(width: 24),
-          Image.asset('assets/images/google.png'),
+          InkWell(
+              onTap: () {
+                Authenticator().signInGoogle(context);
+              },
+              child: Image.asset('assets/images/google.png')),
         ],
       ),
     );
@@ -141,24 +151,7 @@ class _LoginContentState extends State<LoginContent>
     );
   }
 
-  @override
-  void initState() {
-    createAccountContent = [
-      inputField('Username', Ionicons.person_outline),
-      inputField('Email', Ionicons.mail_outline),
-      inputField('Password', Ionicons.lock_closed_outline),
-      loginButton('Sign Up'),
-      orDivider(),
-      logos(),
-    ];
-
-    loginContent = [
-      inputField('Email / Username', Ionicons.mail_outline),
-      inputField('Password', Ionicons.lock_closed_outline),
-      loginButton('Log In'),
-      forgotPassword(),
-    ];
-
+  void initAnimation(){
     ChangeScreenAnimation.initialize(
       vsync: this,
       createAccountItems: createAccountContent.length,
@@ -178,14 +171,32 @@ class _LoginContentState extends State<LoginContent>
         child: loginContent[i],
       );
     }
+  }
 
+  @override
+  void initState() {
+    createAccountContent = [
+      inputField('Username', Ionicons.person_outline, displayName ),
+      inputField('Email', Ionicons.mail_outline, email),
+      inputField('Password', Ionicons.lock_closed_outline, password),
+      loginButton('Sign Up'),
+      orDivider(),
+      logos(),
+    ];
+
+    loginContent = [
+      inputField('Email / Username', Ionicons.mail_outline, email),
+      inputField('Password', Ionicons.lock_closed_outline, password),
+      loginButton('Log In'),
+      forgotPassword(),
+    ];
+    initAnimation();
     super.initState();
   }
 
   @override
   void dispose() {
     ChangeScreenAnimation.dispose();
-
     super.dispose();
   }
 

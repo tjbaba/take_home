@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:introduction_slider/introduction_slider.dart';
 import 'package:take_home/Screens/Home/home.dart';
 
+import '../../providers/Firebase/authentication/firebase_auth.dart';
 import '../login_screen/login_screen.dart';
 
 class OnBoardingScreen extends StatelessWidget {
@@ -93,9 +94,9 @@ class OnBoardingScreen extends StatelessWidget {
          backgroundColor: Colors.white),
       ],
 
-      done: const Done(
-        child: Icon(Icons.done, color: Colors.purple,),
-        home: LoginScreen(),
+      done: Done(
+        child: const Icon(Icons.done, color: Colors.purple,),
+        home: Authenticator().auth.currentUser == null? const LoginScreen() : HomeScreen(),
       ),
       next: const Next(child: Icon(Icons.arrow_forward, color: Colors.purple,)),
       back: const Back(child: Icon(Icons.arrow_back, color: Colors.purple,)),
