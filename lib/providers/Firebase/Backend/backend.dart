@@ -1,11 +1,7 @@
-import 'dart:math';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:take_home/providers/edit_project_provider/edit_project_provider.dart';
-import 'dart:convert';
 import '../../../Screens/board_screen/model/InnerList.dart';
 import '../../board_provider/board_provider.dart';
 
@@ -13,22 +9,15 @@ class Backend extends ChangeNotifier {
   FirebaseFirestore firestore = FirebaseFirestore.instance;
   FirebaseAuth auth = FirebaseAuth.instance;
 
-  void updateProject(WidgetRef ref, id){
-    firestore.collection('Users').doc(auth.currentUser!.uid).collection('Projects').doc(id).set({
-      'name': ref.watch(editProjectProvider).title,
-      'description':ref.watch(editProjectProvider).description
-    }, SetOptions(merge: true));
-  }
-
   void deleteProject(id){
     firestore.collection('Users').doc(auth.currentUser!.uid).collection('Projects').doc(id).delete();
   }
 
-  void uploadData(List<InnerList> data, title) {
+  void uploadData(List<InnerList> data, title, description) {
     Map<String, dynamic> toJson() {
       return {
         'name': title,
-        'description': '',
+        'description': description,
         'createdAt': DateTime.now(),
         'data': data.map((e) => e.toJson()).toList()
       };
@@ -66,6 +55,8 @@ class Backend extends ChangeNotifier {
         .collection('Projects')
         .doc(id);
     ref.get().then((value) {
+      provider.watch(boardProvider).name = value.get('name');
+      provider.watch(boardProvider).description = value.get('description');
       value.get('data').forEach((e) {
         provider.watch(boardProvider).lists.add(InnerList.fromJson(e));
       });

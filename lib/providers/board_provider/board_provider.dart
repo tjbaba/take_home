@@ -6,16 +6,25 @@ import '../../Screens/board_screen/model/InnerList.dart';
 
 class BoardProvider extends ChangeNotifier {
   List<InnerList> lists = [];
+  List<String> header = ['Name', 'description', 'createdAt', 'data'];
+  String? name = '', description = '';
+
+
+  void checkValues(Name, Description) {
+    name = Name;
+    description = Description;
+    notifyListeners();
+  }
 
   void assignTemplate(String title) {
-    lists.clear();
+    name = title;
     lists = title == 'Software Project'
-        ? softwareProject
+        ? Templates.softwareProject
         : title == 'Weekly Plan'
-            ? weeklyPlan
+            ? Templates.weeklyPlan
             : title == 'Quarterly Plan'
-                ? quarterlyPlan
-                : [];
+                ? Templates.quarterlyPlan
+                : Templates.emptyProject;
   }
 
   void deleteTask(int outerIndex, int innerIndex){

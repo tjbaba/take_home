@@ -1,15 +1,13 @@
 import 'package:drag_and_drop_lists/drag_and_drop_lists.dart';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:take_home/Screens/board_screen/components/board_templates.dart';
 import 'package:take_home/Screens/board_screen/components/edit_project_dialouge.dart';
 import 'package:take_home/Screens/board_screen/components/edit_task_dialoge.dart';
 import 'package:take_home/providers/Firebase/Backend/backend.dart';
 import 'package:take_home/providers/board_provider/board_provider.dart';
-import 'package:take_home/providers/edit_project_provider/edit_project_provider.dart';
 import 'package:take_home/providers/edit_task/edit_task_provider.dart';
 import 'package:take_home/utils/constants.dart';
-
+import 'package:to_csv/to_csv.dart' as exportCSV;
 import '../../utils/k_dialog.dart';
 import 'model/InnerList.dart';
 import 'model/task.dart';
@@ -28,7 +26,9 @@ class _KanbanBoardState extends ConsumerState<KanbanBoard> {
     super.initState();
     widget.id != null
         ? Backend().getData(ref, widget.id)
-        : ref.read(boardProvider).assignTemplate(widget.title);
+        : {
+      ref.read(boardProvider).assignTemplate(widget.title),
+    };
   }
 
   @override
@@ -42,10 +42,10 @@ class _KanbanBoardState extends ConsumerState<KanbanBoard> {
         backgroundColor: const Color(0xffF1F1F1),
         title: InkWell(
           onTap: () {
-            projectEditDialouge(context, widget.title, widget.description??'', widget.id??"");
+            projectEditDialouge(context, board.name!, board.description??'', widget.id??"");
           },
           child: Text(
-            widget.title,
+            board.name!,
             style: const TextStyle(
                 // fontFamily: 'Montserrat',
                 fontWeight: FontWeight.bold),
@@ -55,8 +55,8 @@ class _KanbanBoardState extends ConsumerState<KanbanBoard> {
           InkWell(
             onTap: () {
               widget.id == null
-                  ? Backend().uploadData(board.lists, widget.title)
-                  : Backend().updateData(board.lists, widget.title, widget.id);
+                  ? Backend().uploadData(board.lists, board.name, board.description)
+                  : Backend().updateData(board.lists, board.name, widget.id);
             },
             child: const Padding(
               padding: EdgeInsets.only(right: 20),
@@ -330,8 +330,9 @@ class _KanbanBoardState extends ConsumerState<KanbanBoard> {
               style: TextStyle(color: Colors.black87),
             ),
             onPressed: () {
-              ref.watch(backend).updateProject(ref, id);
-              Navigator.pop(context);
+              // ref.watch(backend).updateProject(ref, id);
+              // ref.watch(editProjectProvider).
+              // Navigator.pop(context);
               Navigator.pop(context);
             },
           ),

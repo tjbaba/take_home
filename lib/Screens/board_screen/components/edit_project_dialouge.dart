@@ -1,12 +1,9 @@
 import 'package:flex_color_picker/flex_color_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:intl/intl.dart';
-import 'package:take_home/providers/edit_project_provider/edit_project_provider.dart';
+import 'package:take_home/providers/board_provider/board_provider.dart';
 import 'package:take_home/providers/edit_task/edit_task_provider.dart';
-import 'package:take_home/utils/constants.dart';
 import '../widgets/k_textField.dart';
-import 'dart:math' as math;
 
 Color pickerColor = const Color(0xff443a49);
 Color currentColor = const Color(0xff443a49);
@@ -29,23 +26,23 @@ class _EditProjectDialogState extends ConsumerState<EditProjectDialouge> {
   @override
   void initState() {
     super.initState();
-    ref.read(editProjectProvider).checkValues(widget.name, widget.description);
+    ref.read(boardProvider).checkValues(widget.name, widget.description);
   }
 
   @override
   Widget build(BuildContext context) {
-    final provider = ref.watch(editProjectProvider);
+    final provider = ref.watch(boardProvider);
     return ListView(
       children: [
         // Task.title
         KTextField(
           icon: Icons.title,
           name: 'Title',
-          value: provider.title!,
+          value: provider.name!,
           minLines: 1,
           maxLines: 3,
           onChanged: (value) {
-            provider.title = value;
+            provider.name = value;
           },
         ),
 

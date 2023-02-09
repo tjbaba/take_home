@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_rounded_date_picker/flutter_rounded_date_picker.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -9,7 +11,8 @@ import '../../Screens/board_screen/model/task.dart';
 class EditTaskProvider extends ChangeNotifier {
   String? title, description, label, note;
   Color? color;
-  DateTime? dueDate;
+  DateTime? dueDate, startDate;
+  var timePassed;
 
   List<String> options = [
     'Important',
@@ -59,7 +62,21 @@ class EditTaskProvider extends ChangeNotifier {
         description: description,
         color: color,
         dueDate: dueDate,
+        startDate: startDate,
         label: label, note: note);
+    notifyListeners();
+  }
+
+  void startTimer(){
+    startDate = DateTime.now();
+    checkTime();
+    notifyListeners();
+  }
+
+  void checkTime(){
+    Timer.periodic(const Duration(seconds: 1), (timer) {
+      timePassed = startDate!.difference(DateTime.now());
+    });
     notifyListeners();
   }
 }

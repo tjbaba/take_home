@@ -44,6 +44,9 @@ class _EditTaskDialogState extends ConsumerState<EditTaskDialog> {
   @override
   void initState() {
     super.initState();
+    ref.read(editTaskProvider).startDate != null
+        ? ref.read(editTaskProvider).checkTime()
+        : null;
     ref.read(editTaskProvider).checkValues(widget.item);
   }
 
@@ -83,6 +86,33 @@ class _EditTaskDialogState extends ConsumerState<EditTaskDialog> {
           // ),
         ),
 
+        //Task.timer
+        InputDecorator(
+            decoration: const InputDecoration(
+              labelText: 'Timer',
+              labelStyle: TextStyle(color: kPrimaryColor),
+              border: InputBorder.none,
+              icon: Icon(
+                Icons.timer,
+                color: kPrimaryColor,
+              ),
+            ),
+            child: InkWell(
+              onTap: () async {
+                provider.startTimer();
+              },
+              child: Row(
+                children: [
+                  provider.startDate == null
+                      ? const Text('Start Timer')
+                      : Consumer(builder: (context, watch, child) {
+
+                        return Text("${watch.watch(editTaskProvider).timePassed}");
+                  })
+                ],
+              ),
+            )),
+
         //Task.color
         InputDecorator(
             decoration: const InputDecoration(
@@ -121,7 +151,7 @@ class _EditTaskDialogState extends ConsumerState<EditTaskDialog> {
               labelStyle: TextStyle(color: kPrimaryColor),
               border: InputBorder.none,
               icon: Icon(
-                Icons.timer,
+                Icons.hourglass_full,
                 color: kPrimaryColor,
               ),
             ),

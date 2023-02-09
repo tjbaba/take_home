@@ -25,8 +25,7 @@ class _BuildAddProjectState extends State<BuildAddProject> {
           child: BoardCreationList(
             onSelected: (value) {
               Navigator.pop(context);
-              Navigator.push(context, MaterialPageRoute(builder: (context) => KanbanBoard(title: value,)));
-              print(value);
+              Navigator.push(context, MaterialPageRoute(builder: (context) => KanbanBoard(title: value,description: '',)));
             },
           ),
         ),
